@@ -1,5 +1,5 @@
-#!name=bdyy
-#!desc=bdyy
+#!name=波点音乐
+#!desc=波点音乐 会员调试 + 去广告 + 下载功能 + 付费专辑解锁
 
 [Map Local]
 ^https?:\/\/tmeadcomm.y.qq.com\/ data-type=text data=" " status-code=200
