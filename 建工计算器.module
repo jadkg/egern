@@ -1,0 +1,9 @@
+#!name=建工计算器
+#!desc=建工计算器解锁（非一次性解锁，使用App前需开启脚本）
+#!icon=https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/Category_Magazine.png
+
+[Script]
+jgjsq = type=http-response, pattern=^https?:\/\/calc\.kuaicad\.com\/authority\/verify_vip, script-path=https://raw.githubusercontent.com/chxm1023/Rewrite/main/jgjsq.js, requires-body=true, timeout=60
+
+[MITM]
+hostname = %APPEND% calc.kuaicad.com
