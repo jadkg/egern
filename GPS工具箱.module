@@ -1,0 +1,9 @@
+#!name=GPS工具箱
+#!desc=会员解锁
+
+[Script]
+# > gps工具箱
+gps = type=http-response, pattern=^^https:\/\/service\.gpstool\.com\/app\/index\/getUserInfo, script-path=https://raw.githubusercontent.com/WeiGiegie/666/main/gps.js, requires-body=true, max-size=-1, timeout=60
+
+[MITM]
+hostname = %APPEND% service.gpstool.com
