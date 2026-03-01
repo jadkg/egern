@@ -1,0 +1,10 @@
+#!name=insav会员解锁
+#!desc=解锁  无码区，有码区，4k区，动漫区会员 ，需要登录账号
+
+[Script]
+insav.tv = type=http-response, pattern=^https?:\/\/(insav\.tv|4k\.insav\.tv|dm\.insav\.tv|.*\.rftn469\.com)\/api\/(extend\/lists|config\/lists|config\/links|notice\/lists|user\/(getVipStatus|info)), script-path=https://raw.githubusercontent.com/Yu9191/Rewrite/refs/heads/main/insav.tv.js, requires-body=true, max-size=-1, timeout=60
+
+insav.tv = type=http-request, pattern=^https?:\/\/(insav\.tv|4k\.insav\.tv|dm\.insav\.tv|.*\.rftn469\.com)\/api\/video\/getVideoUrl, script-path=https://raw.githubusercontent.com/Yu9191/Rewrite/refs/heads/main/insav.tv.js, requires-body=true, max-size=-1, timeout=60
+
+[MITM]
+hostname = %APPEND% insav.tv, 4k.insav.tv, dm.insav.tv, *.rftn469.com
