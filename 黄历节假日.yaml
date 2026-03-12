@@ -1,0 +1,12 @@
+name: "黄历节假日小组件"
+description: "黄历节假日小组件"
+scriptings:
+- generic:
+    name: 黄历节假日
+    script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/黄历节假日.js
+
+widgets:
+- name: 黄历节假日
+  script_name: 黄历节假日
+
+
