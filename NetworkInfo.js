@@ -1,121 +1,120 @@
-// 文件名建议：NetworkInfoWidget.js
+// 文件名建议：NetworkInfoFull.js
 // 类型：generic
-  const publicInfo = ctx.storage.getJSON("public_ip_info") || {};
-  if (publicInfo.ip) {
-    lines.push({ label: "公网 IPv4", value: publicInfo.ip });
-    lines.push({ label: "位置", value: [publicInfo.country, publicInfo.region, publicInfo.city].filter(Boolean).join(" ") });
-  }
-export default async function (ctx) {
+// 在 Egern 小组件中使用此脚本
+
+export default async function(ctx) {
   const device = ctx.device || {};
   const wifi = device.wifi || {};
   const cellular = device.cellular || {};
   const ipv4 = device.ipv4 || {};
   const ipv6 = device.ipv6 || {};
 
-  // 判断网络类型并生成标题
-  let title = "网络信息";
-  let networkIcon = "wifi";
-  let iconColor = "#007AFF"; // 蓝色
+  // ------------------ 1. 准备本地网络信息 ------------------
+  let localCarrier = cellular.carrier || "";
+  let networkType = "未连接";
+  let icon = "exclamationmark.triangle";
+  let iconColor = "#FF3B30";  // 红色 fallback
 
   if (wifi.ssid) {
-    title = `${wifi.ssid}`;
+    networkType = wifi.ssid;
+    icon = "wifi";
+    iconColor = "#007AFF";  // 蓝色 Wi-Fi
   } else if (cellular.radio) {
-    let radio = cellular.radio.toUpperCase();
-    let type = "蜂窝";
-    if (radio.includes("NR") || radio.includes("5G")) type = "5G";
-    else if (radio.includes("LTE")) type = "4G";
-    else if (radio.includes("WCDMA") || radio.includes("HSDPA")) type = "3G";
-    title = `${cellular.carrier || "未知运营商"} | ${type}`;
-    networkIcon = "simcard";
-    iconColor = "#F9BF45"; // 橙色
-  } else {
-    title = "未连接网络";
+    let radio = (cellular.radio || "").toUpperCase().replace(/\s/g, "");
+    if (radio.includes("NR") || radio === "5G" || radio.includes("NSA") || radio.includes("NR5G")) {
+      networkType = "5G";
+    } else if (radio.includes("LTE") || radio === "4G") {
+      networkType = "4G";
+    } else if (radio.includes("WCDMA") || radio.includes("HSDPA")) {
+      networkType = "3G";
+    } else {
+      networkType = radio || "蜂窝";
+    }
+    icon = "simcard.fill";
+    iconColor = "#F9BF45";  // 橙色蜂窝
   }
 
-  // 准备显示行
-  const lines = [];
+  // ------------------ 2. 请求公网信息（合并在这里） ------------------
+  let publicIP = "检测中...";
+  let publicLocation = "";
+  let ispRaw = "";
+  let displayCarrier = "--";  // 默认显示 --
 
-  // 内网 IPv4
-  if (ipv4.address && ipv4.address !== "0.0.0.0") {
-    lines.push({
-      label: "内网 IPv4",
-      value: ipv4.address
+  try {
+    // 使用 ip-api.com，支持中文 & ISP 字段（常包含 "China Mobile" 等）
+    const resp = await ctx.http.get("http://ip-api.com/json/?lang=zh-CN&fields=status,message,query,isp,org,as,mobile,country,city,regionName", {
+      timeout: 8000  // 超时 8 秒，避免卡住小组件
     });
-  }
 
-  // 内网网关（路由器IP） — 只有 Wi-Fi 时较可靠
-  if (wifi.ssid && ipv4.gateway && ipv4.gateway !== "0.0.0.0") {
-    lines.push({
-      label: "内网路由",
-      value: ipv4.gateway
-    });
-  }
+    if (resp.status === 200) {
+      const data = await resp.json();
 
-  // 内网 IPv6（只显示非临时链路本地地址）
-  if (ipv6.address && !ipv6.address.startsWith("fe80:")) {
-    lines.push({
-      label: "内网 IPv6",
-      value: ipv6.address
-    });
-  }
+      if (data.status === "success") {
+        publicIP = data.query || "未知";
+        publicLocation = [data.country, data.regionName, data.city].filter(Boolean).join(" ");
+        ispRaw = data.isp || data.org || data.as || "";
 
-  // 小尺寸 / 矩形配件 简化显示
-  if (ctx.widgetFamily === "systemSmall" || ctx.widgetFamily === "accessoryRectangular") {
-    return {
-      type: "widget",
-      padding: 12,
-      gap: 6,
-      backgroundColor: {"light": "#F5F5F7", "dark": "#1C1C1E"},
-      children: [
-        {
-          type: "stack",
-          direction: "row",
-          alignItems: "center",
-          gap: 8,
-          children: [
-            {
-              type: "image",
-              src: `sf-symbol:${networkIcon}`,
-              width: 20,
-              height: 20,
-              color: iconColor
-            },
-            {
-              type: "text",
-              text: title,
-              font: { size: "headline", weight: "semibold" },
-              textColor: {"light": "#000000", "dark": "#FFFFFF"},
-              flex: 1,
-              minScale: 0.8
-            }
-          ]
-        },
-        {
-          type: "text",
-          text: lines.map(l => l.value).join("\n") || "无IP信息",
-          font: { size: "caption1" },
-          textColor: {"light": "#666666", "dark": "#BBBBBB"},
-          textAlign: "left",
-          maxLines: 3
+        // ------------------ 运营商格式化（核心） ------------------
+        const lowerISP = ispRaw.toLowerCase();
+        if (lowerISP.includes("mobile") || lowerISP.includes("cmcc") || lowerISP.includes("chinamobile") || lowerISP.includes("中国移动")) {
+          displayCarrier = "中国移动";
+        } else if (lowerISP.includes("telecom") || lowerISP.includes("ctcc") || lowerISP.includes("中国电信")) {
+          displayCarrier = "中国电信";
+        } else if (lowerISP.includes("unicom") || lowerISP.includes("中国联通")) {
+          displayCarrier = "中国联通";
+        } else if (lowerISP.includes("broadcast") || lowerISP.includes("广电")) {
+          displayCarrier = "中国广电";
+        } else if (data.mobile === true || lowerISP.includes("mobile network")) {
+          displayCarrier = "移动网络";  // 兜底
+        } else {
+          // 如果 ISP 为空或不匹配，用本地 carrier fallback
+          displayCarrier = formatCarrier(localCarrier) || "未知运营商";
         }
-      ]
-    };
+      } else {
+        publicIP = "检测失败";
+      }
+    }
+  } catch (e) {
+    publicIP = "网络错误";
+    console.log("[Public IP Error]", e);
   }
 
-  // 中/大尺寸 显示更多细节
+  // 小函数：格式化本地 carrier（备用）
+  function formatCarrier(carrier) {
+    if (!carrier) return null;
+    const lower = carrier.toLowerCase();
+    if (lower.includes("mobile") || lower.includes("cmcc")) return "中国移动";
+    if (lower.includes("telecom") || lower.includes("ct")) return "中国电信";
+    if (lower.includes("unicom")) return "中国联通";
+    return carrier;
+  }
+
+  const title = `${displayCarrier} | ${networkType}`;
+
+  // ------------------ 3. 内网信息 ------------------
+  const contentLines = [];
+
+  if (ipv4.address && ipv4.address !== "0.0.0.0") {
+    contentLines.push(`内网 IPv4: ${ipv4.address}`);
+  }
+
+  if (ipv6.address && ipv6.address.includes(":")) {
+    contentLines.push(`内网 IPv6: ${ipv6.address}`);
+  }
+
+  if (ipv4.gateway && ipv4.gateway !== "0.0.0.0" && wifi.ssid) {
+    contentLines.push(`内网路由: ${ipv4.gateway}`);
+  }
+
+  // ------------------ 4. 小组件 DSL 输出 ------------------
+  // 风格模仿你的截图：深色背景、简洁列表、底部署名+时间
   return {
     type: "widget",
-    padding: [14, 16, 14, 16],
-    gap: 10,
-    backgroundGradient: {
-      type: "linear",
-      colors: ["#0F2027", "#203A43", "#2C5364"],
-      startPoint: { x: 0, y: 0 },
-      endPoint: { x: 1, y: 1 }
-    },
-    borderRadius: "auto",
+    padding: [12, 16, 12, 16],
+    gap: 8,
+    backgroundColor: {"light": "#1C1C1E", "dark": "#000000"},  // 深黑/灰
     children: [
-      // 标题行
+      // 标题行 + 图标
       {
         type: "stack",
         direction: "row",
@@ -124,7 +123,7 @@ export default async function (ctx) {
         children: [
           {
             type: "image",
-            src: `sf-symbol:${networkIcon}.fill`,
+            src: `sf-symbol:${icon}`,
             width: 28,
             height: 28,
             color: iconColor
@@ -134,44 +133,41 @@ export default async function (ctx) {
             text: title,
             font: { size: "title3", weight: "bold" },
             textColor: "#FFFFFF",
-            flex: 1
+            flex: 1,
+            minScale: 0.8
           }
         ]
       },
 
-      // 分隔
-      { type: "spacer", length: 4 },
-
-      // 信息列表
-      ...lines.map(item => ({
-        type: "stack",
-        direction: "row",
-        alignItems: "center",
-        gap: 8,
-        children: [
-          {
-            type: "text",
-            text: item.label + "：",
-            font: { size: "subheadline" },
-            textColor: "#AAAAAA",
-            width: 90   // 固定标签宽度，右对齐对齐值
-          },
-          {
-            type: "text",
-            text: item.value || "—",
-            font: { size: "body", weight: "medium" },
-            textColor: "#FFFFFF",
-            flex: 1,
-            minScale: 0.85
-          }
-        ]
+      // 内网信息列表
+      ...contentLines.map(line => ({
+        type: "text",
+        text: line,
+        font: { size: "subheadline" },
+        textColor: "#DDDDDD",
+        textAlign: "left"
       })),
 
-      // 底部更新提示（可选）
+      // 公网信息（如果获取成功）
+      ...(publicIP !== "检测中..." && publicIP !== "检测失败" && publicIP !== "网络错误" ? [{
+        type: "text",
+        text: `公网 IPv4: ${publicIP}`,
+        font: { size: "subheadline" },
+        textColor: "#AAAAAA"
+      }] : []),
+
+      ...(publicLocation ? [{
+        type: "text",
+        text: `位置: ${publicLocation}`,
+        font: { size: "caption1" },
+        textColor: "#888888"
+      }] : []),
+
+      // 底部署名 + 当前时间（格式 21:02）
       { type: "spacer" },
       {
         type: "text",
-        text: "由 Egern • " + (new Date().toLocaleTimeString("zh-CN", {hour12:false}).slice(0,5)),
+        text: `由 Egern • ${new Date().toLocaleTimeString('zh-CN', {hour12: false, hour: '2-digit', minute: '2-digit'})}`,
         font: { size: "caption2" },
         textColor: "#777777",
         textAlign: "center"
