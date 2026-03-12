@@ -1,0 +1,15 @@
+name: "万年历小组件"
+description: "万年历小组件"
+
+scriptings:
+  - generic:
+      name: 万年历
+      script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/万年历.js
+
+widgets:
+  - name: 万年历
+    script_name: 万年历
+
+
+
+
