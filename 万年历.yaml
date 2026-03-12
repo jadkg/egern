@@ -4,7 +4,7 @@ description: "万年历小组件"
 scriptings:
   - generic:
       name: 万年历
-      script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/万年历.js
+      script_url: https://raw.githubusercontent.com/jnlaoshu/MySelf/main/Script/Almanac.js
 
 widgets:
   - name: 万年历
