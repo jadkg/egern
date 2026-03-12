@@ -1,6 +1,4 @@
-// NetworkInfoOptimized.js
-// 优化：运营商用本地 fallback + 硬编码，公网只显示 IP/位置
-// 去除“由 Egern”，紧凑排版，深色风格
+// NetworkInfoNoTime.js - 最终版：无运营商、无时间、紫蓝渐变背景
 
 export default async function(ctx) {
   const device = ctx.device || {};
@@ -9,23 +7,7 @@ export default async function(ctx) {
   const ipv4 = device.ipv4 || {};
   const ipv6 = device.ipv6 || {};
 
-  // ------------------ 运营商 & 网络类型 ------------------
-  let displayCarrier = "中国移动";  // 硬编码兜底（你的情况明确是中国移动）
-  
-  // 如果 ctx.device.cellular.carrier 有值，尝试格式化（偶尔系统会给）
-  if (cellular.carrier) {
-    const lower = cellular.carrier.toLowerCase();
-    if (lower.includes("mobile") || lower.includes("cmcc") || lower.includes("chinamobile")) {
-      displayCarrier = "中国移动";
-    } else if (lower.includes("telecom") || lower.includes("ctcc")) {
-      displayCarrier = "中国电信";
-    } else if (lower.includes("unicom")) {
-      displayCarrier = "中国联通";
-    } else {
-      displayCarrier = cellular.carrier;  // 系统原值
-    }
-  }
-
+  // ------------------ 网络类型 & 标题 ------------------
   let networkType = "未连接";
   let icon = "exclamationmark.triangle";
   let iconColor = "#FF3B30";
@@ -33,7 +15,7 @@ export default async function(ctx) {
   if (wifi.ssid) {
     networkType = wifi.ssid;
     icon = "wifi";
-    iconColor = "#007AFF";
+    iconColor = "#A8DADC";  // 浅蓝绿，在紫背景突出
   } else if (cellular.radio) {
     let radio = (cellular.radio || "").toUpperCase().replace(/\s/g, "");
     if (radio.includes("NR") || radio === "5G" || radio.includes("NSA") || radio.includes("NR5G")) {
@@ -44,10 +26,10 @@ export default async function(ctx) {
       networkType = radio || "蜂窝";
     }
     icon = "simcard.fill";
-    iconColor = "#F9BF45";
+    iconColor = "#F4A261";  // 暖橙突出
   }
 
-  const title = `${displayCarrier} | ${networkType}`;
+  const title = networkType;
 
   // ------------------ 内网信息 ------------------
   const lines = [];
@@ -60,7 +42,7 @@ export default async function(ctx) {
     lines.push(`内网 IPv6: ${ipv6.address}`);
   }
 
-  // ------------------ 公网信息（从 API 获取） ------------------
+  // ------------------ 公网信息 ------------------
   let publicIP = "--";
   let location = "--";
 
@@ -73,8 +55,7 @@ export default async function(ctx) {
         location = [data.country, data.regionName, data.city]
           .filter(Boolean)
           .join(" ")
-          .replace("加利福尼亚", "加州")  // 更简洁
-          .replace("洛杉矶", "洛杉矶");  // 保持原样
+          .replace("加利福尼亚", "加州");
       }
     }
   } catch (e) {
@@ -88,12 +69,17 @@ export default async function(ctx) {
     lines.push(`位置: ${location}`);
   }
 
-  // ------------------ 小组件 DSL：紧凑排版，无底部署名 ------------------
+  // ------------------ 小组件 DSL ------------------
   return {
     type: "widget",
-    padding: [10, 14, 10, 14],  // 缩小 padding，更紧凑
-    gap: 4,                     // 行间距更小
-    backgroundColor: {"light": "#121212", "dark": "#000000"},
+    padding: [10, 12, 10, 12],
+    gap: 4,
+    backgroundGradient: {
+      type: "linear",
+      colors: ["#2F1C53", "#4B0082", "#6A5ACD", "#483D8B"],
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 1, y: 1 }
+    },
     borderRadius: "auto",
     children: [
       // 标题行
@@ -106,8 +92,8 @@ export default async function(ctx) {
           {
             type: "image",
             src: `sf-symbol:${icon}`,
-            width: 22,
-            height: 22,
+            width: 20,
+            height: 20,
             color: iconColor
           },
           {
@@ -116,31 +102,21 @@ export default async function(ctx) {
             font: { size: "title3", weight: "bold" },
             textColor: "#FFFFFF",
             flex: 1,
-            minScale: 0.85
+            minScale: 0.9
           }
         ]
       },
 
-      // 内容列表（统一 subheadline，左对齐，稍小字体）
-      ...lines.map(line => ({
+      // 信息列表（无时间、无额外底部元素）
+      ...lines.map((line, index) => ({
         type: "text",
         text: line,
-        font: { size: "subheadline" },  // 或试 "caption1" 如果想更小
-        textColor: line.startsWith("公网") || line.startsWith("位置") ? "#BBBBBB" : "#DDDDDD",
+        font: { size: "subheadline" },
+        textColor: index >= lines.length - 2 ? "#BBBBBB" : "#E0E0E0",  // 公网部分稍淡
         textAlign: "left",
-        lineLimit: 1,  // 防止 IPv6 换行太多
-        minScale: 0.9
-      })),
-
-      // 只留时间（右下角小字，可选移除：删掉下面这个 stack）
-      { type: "spacer" },
-      {
-        type: "text",
-        text: new Date().toLocaleTimeString('zh-CN', {hour12: false, hour: '2-digit', minute: '2-digit'}),
-        font: { size: "caption2" },
-        textColor: "#666666",
-        textAlign: "right"
-      }
+        lineLimit: 1,
+        minScale: 0.85
+      }))
     ]
   };
 }
