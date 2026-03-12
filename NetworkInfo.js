@@ -1,6 +1,4 @@
-/**
- * 严格按照 Egern JS API 重新实现的网络信息脚本
- */
+
 
 async function main() {
   // 获取 Egern 系统网络信息
