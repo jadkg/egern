@@ -1,107 +1,44 @@
-export default async function(ctx) {
+/**
+ * 严格按照 Egern JS API 重新实现的网络信息脚本
+ */
 
-  const wifi = ctx.device.wifi?.ssid || "未连接"
-  const ipv4 = ctx.device.ipv4?.address || "—"
-  const dns = (ctx.device.dnsServers || []).join(", ") || "—"
+async function main() {
+  // 获取 Egern 系统网络信息
+  const networkInfo = $network;
+  const primaryInterface = networkInfo.primaryInterfaceAddress;
 
-  const radio = ctx.device.cellular?.radio || ""
-  const carrierRaw = ctx.device.cellular?.carrier || ""
-
-  // 运营商识别
-  let carrier = "—"
-
-  if (carrierRaw.includes("Mobile") || carrierRaw.includes("CMCC") || carrierRaw.includes("移动"))
-    carrier = "中国移动"
-  else if (carrierRaw.includes("Unicom") || carrierRaw.includes("联通"))
-    carrier = "中国联通"
-  else if (carrierRaw.includes("Telecom") || carrierRaw.includes("电信"))
-    carrier = "中国电信"
-  else if (carrierRaw !== "")
-    carrier = carrierRaw
-
-  let networkType = wifi !== "未连接" ? "WiFi" : (radio || "蜂窝")
-
-  let publicIP = "—"
-  let location = "—"
-  let flag = ""
-
-  // 获取公网IP
-  try {
-
-    const res = await ctx.http.get({
-      url: "https://ip.sb/geoip",
-      timeout: 5000
-    })
-
-    const data = JSON.parse(res.body)
-
-    publicIP = data.ip || "—"
-    location = `${data.country} ${data.city}`
-
-    if (data.country_code) {
-      flag = String.fromCodePoint(
-        ...[...data.country_code.toUpperCase()].map(c => 127397 + c.charCodeAt())
-      )
-    }
-
-  } catch (e) {}
-
-  // 延迟测试
-  let latency = "—"
-
-  try {
-
-    const start = Date.now()
-
-    await ctx.http.get({
-      url: "https://1.1.1.1",
-      timeout: 3000
-    })
-
-    latency = Date.now() - start + " ms"
-
-  } catch (e) {}
-
-  const items = [
-    `🌍 ${publicIP} ${flag}`,
-    `📍 ${location}`,
-    `📶 WiFi: ${wifi}`,
-    `🖥 IP: ${ipv4}`,
-    `🔐 DNS: ${dns}`,
-    `📡 ${carrier} ${networkType}`,
-    `⚡ 延迟: ${latency}`
-  ]
-
-  return {
-    type: "widget",
-    padding: 16,
-
-    backgroundGradient: {
-      colors: ["#8be6b3","#c8f7d6"],
-      locations: [0,1]
-    },
-
-    children: [
-
-      {
-        type: "text",
-        text: "网络信息",
-        font: { size: "headline", weight: "bold" },
-        textColor: "#063d2b"
-      },
-
-      {
-        type: "spacer",
-        size: 8
-      },
-
-      ...items.map(i => ({
-        type: "text",
-        text: i,
-        font: { size: "caption1" },
-        textColor: "#063d2b"
-      }))
-    ]
+  // 1. 判断网络类型与 SSID
+  let connectionName = "未连接";
+  if (networkInfo.ssid) {
+    connectionName = `Wi-Fi: ${networkInfo.ssid}`;
+  } else if (networkInfo.radioGeneration) {
+    connectionName = `蜂窝: ${networkInfo.radioGeneration}`;
   }
 
+  // 2. 获取 IP 地址
+  const ipv4 = primaryInterface.v4 || "无";
+  const ipv6 = primaryInterface.v6 ? "已分配" : "未分配";
+
+  // 3. 构造组件展示对象 (必须符合 Widget 定义)
+  const widgetResponse = {
+    title: "网络环境",
+    content: `${connectionName}\nIPv4: ${ipv4}\nIPv6: ${ipv6}`,
+    icon: "router", // 也可以用 "wifi" 或 "network"
+    backgroundColor: "#1c1c1e",
+    titleColor: "#0A84FF",
+    contentColor: "#FFFFFF"
+  };
+
+  // 4. 必须使用 $done 返回
+  $done(widgetResponse);
 }
+
+// 执行并捕获错误
+main().catch((err) => {
+  $done({
+    title: "脚本执行错误",
+    content: err.message,
+    icon: "alert-triangle",
+    backgroundColor: "#FF3B30"
+  });
+});
