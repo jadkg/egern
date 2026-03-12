@@ -9,3 +9,8 @@ widgets:
 - name: 机场订阅
   script_name: 机场订阅
 
+##环境变量添加机场订阅
+##NAME1 = 机场1名称
+##URL1 = 机场1订阅链接
+##RESET1 = 机场1流量重置日期
+
