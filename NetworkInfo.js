@@ -1,43 +1,107 @@
-/**
- * Egern Network Info Widget
- * 严格适配版
- */
+export default async function(ctx) {
 
-(async () => {
+  const wifi = ctx.device.wifi?.ssid || "未连接"
+  const ipv4 = ctx.device.ipv4?.address || "—"
+  const dns = (ctx.device.dnsServers || []).join(", ") || "—"
+
+  const radio = ctx.device.cellular?.radio || ""
+  const carrierRaw = ctx.device.cellular?.carrier || ""
+
+  // 运营商识别
+  let carrier = "—"
+
+  if (carrierRaw.includes("Mobile") || carrierRaw.includes("CMCC") || carrierRaw.includes("移动"))
+    carrier = "中国移动"
+  else if (carrierRaw.includes("Unicom") || carrierRaw.includes("联通"))
+    carrier = "中国联通"
+  else if (carrierRaw.includes("Telecom") || carrierRaw.includes("电信"))
+    carrier = "中国电信"
+  else if (carrierRaw !== "")
+    carrier = carrierRaw
+
+  let networkType = wifi !== "未连接" ? "WiFi" : (radio || "蜂窝")
+
+  let publicIP = "—"
+  let location = "—"
+  let flag = ""
+
+  // 获取公网IP
   try {
-    const network = $network;
-    const primaryInterface = network.primaryInterfaceAddress;
-    
-    // 1. 确定连接名称
-    let conn = "未连接";
-    if (network.ssid) {
-      conn = network.ssid;
-    } else if (network.radioGeneration) {
-      conn = `蜂窝 (${network.radioGeneration})`;
+
+    const res = await ctx.http.get({
+      url: "https://ip.sb/geoip",
+      timeout: 5000
+    })
+
+    const data = JSON.parse(res.body)
+
+    publicIP = data.ip || "—"
+    location = `${data.country} ${data.city}`
+
+    if (data.country_code) {
+      flag = String.fromCodePoint(
+        ...[...data.country_code.toUpperCase()].map(c => 127397 + c.charCodeAt())
+      )
     }
 
-    // 2. 格式化 IP
-    const v4 = primaryInterface.v4 || "N/A";
-    const v6 = primaryInterface.v6 ? "已连接" : "未开启";
+  } catch (e) {}
 
-    // 3. 构建输出 (所有字段必须为字符串)
-    const result = {
-      title: "当前网络",
-      content: `SSID: ${conn}\nIPv4: ${v4}\nIPv6: ${v6}`,
-      icon: "wifi",
-      backgroundColor: "#4285F4",
-      titleColor: "#FFFFFF",
-      contentColor: "#F8F9FA"
-    };
+  // 延迟测试
+  let latency = "—"
 
-    $done(result);
-  } catch (e) {
-    // 捕获异常，防止组件显示空白
-    $done({
-      title: "脚本错误",
-      content: e.message || "未知错误",
-      icon: "alert-circle",
-      backgroundColor: "#EA4335"
-    });
+  try {
+
+    const start = Date.now()
+
+    await ctx.http.get({
+      url: "https://1.1.1.1",
+      timeout: 3000
+    })
+
+    latency = Date.now() - start + " ms"
+
+  } catch (e) {}
+
+  const items = [
+    `🌍 ${publicIP} ${flag}`,
+    `📍 ${location}`,
+    `📶 WiFi: ${wifi}`,
+    `🖥 IP: ${ipv4}`,
+    `🔐 DNS: ${dns}`,
+    `📡 ${carrier} ${networkType}`,
+    `⚡ 延迟: ${latency}`
+  ]
+
+  return {
+    type: "widget",
+    padding: 16,
+
+    backgroundGradient: {
+      colors: ["#8be6b3","#c8f7d6"],
+      locations: [0,1]
+    },
+
+    children: [
+
+      {
+        type: "text",
+        text: "网络信息",
+        font: { size: "headline", weight: "bold" },
+        textColor: "#063d2b"
+      },
+
+      {
+        type: "spacer",
+        size: 8
+      },
+
+      ...items.map(i => ({
+        type: "text",
+        text: i,
+        font: { size: "caption1" },
+        textColor: "#063d2b"
+      }))
+    ]
   }
-})();
+
+}
