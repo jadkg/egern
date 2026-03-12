@@ -1,0 +1,9 @@
+name: "机场订阅小组件"
+description: "机场订阅小组件"
+scriptings:
+- generic:
+    name: 加密货币行情
+    script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/dingyue.js
+
+
+
