@@ -1,0 +1,14 @@
+name: "网络测试小组件"
+description: "网络测试小组件"
+
+scriptings:
+  - generic:
+      name: 网络测试
+      script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/网络测试.js
+
+widgets:
+  - name: 网络测试
+    script_name: 网络测试
+
+
+
