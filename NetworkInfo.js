@@ -1,11 +1,11 @@
 // 文件名建议：NetworkInfoWidget.js
 // 类型：generic
-export default async function (ctx) {
-    const publicInfo = ctx.storage.getJSON("public_ip_info") || {};
+  const publicInfo = ctx.storage.getJSON("public_ip_info") || {};
   if (publicInfo.ip) {
     lines.push({ label: "公网 IPv4", value: publicInfo.ip });
     lines.push({ label: "位置", value: [publicInfo.country, publicInfo.region, publicInfo.city].filter(Boolean).join(" ") });
   }
+export default async function (ctx) {
   const device = ctx.device || {};
   const wifi = device.wifi || {};
   const cellular = device.cellular || {};
