@@ -1,0 +1,12 @@
+name: "今日黄金小组件"
+description: "当日黄金价格"
+scriptings:
+- generic:
+    name: 今日黄金
+    script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/今日黄金.js
+
+widgets:
+- name: 今日黄金
+  script_name: 今日黄金
+
+
