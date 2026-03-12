@@ -5,9 +5,9 @@ scriptings:
     name: 网络信息
     script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/NetworkInfo.js
 widgets:
-  - title: 网络信息
-    script_name: 网络信息
-    update_interval: 60 # 每60秒更新一次
+- neme: 网络信息
+  script_name: 网络信息
+  update_interval: 60 # 每60秒更新一次
 
 
 
