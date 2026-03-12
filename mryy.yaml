@@ -1,0 +1,14 @@
+name: "每日一言"
+description: "一言（Hitokoto）小组件，每次刷新展示一条随机名言/语录"
+scriptings:
+# 一言（Hitokoto）小组件，每次刷新展示一条随机名言/语录
+# env:
+#   TYPE - 句子类型: a(动画) b(漫画) c(游戏) d(文学) e(原创)
+#          f(网络) g(其他) h(影视) i(诗词) j(网易云) k(哲学)
+#          默认不限
+- generic:
+    name: 一言
+    script_url: https://raw.githubusercontent.com/egerndaddy/quick-start/main/modules/hitokoto.js
+widgets:
+- name: 一言
+  script_name: 一言
