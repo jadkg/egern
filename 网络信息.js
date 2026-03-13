@@ -278,22 +278,20 @@ export default async function (ctx) {
       icon = "simcard.fill"; iconColor = "#F4A261";
     }
 
-    // parallel: latency and public info
-    var latencyEndpoints = [
-      "http://wifi.vivo.com.cn/generate_204"
-    ];
-    var pLatency = measureLatency(latencyEndpoints, 3500);
-    var pPublic = fetchPublicInfo();
-    var measuredLatency = null;
-    var publicInfo = null;
-    try {
-      var all = await Promise.all([pLatency, pPublic]);
-      measuredLatency = all[0];
-      publicInfo = all[1];
-    } catch (e) {
-      try { measuredLatency = await pLatency; } catch (ee) { measuredLatency = null; }
-      try { publicInfo = await pPublic; } catch (ee2) { publicInfo = null; }
-    }
+// parallel: latency and public info
+var latencyEndpoints = [
+  "http://wifi.vivo.com.cn/generate_204",
+  "http://connectivitycheck.platform.hicloud.com/generate_204",
+  "http://connect.rom.miui.com/generate_204"
+];
+
+var pLatency = measureLatency(latencyEndpoints, 3500);
+var pPublic = fetchPublicInfo();
+
+var results = await Promise.allSettled([pLatency, pPublic]);
+
+var measuredLatency = results[0].status === "fulfilled" ? results[0].value : null;
+var publicInfo = results[1].status === "fulfilled" ? results[1].value : null;
 
     // signal
     var rssi = null;
