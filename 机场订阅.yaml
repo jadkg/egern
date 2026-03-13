@@ -3,7 +3,7 @@ description: "机场订阅小组件"
 scriptings:
 - generic:
     name: 机场订阅
-    script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/dingyue.js
+    script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/机场订阅.js
 
 widgets:
 - name: 机场订阅
