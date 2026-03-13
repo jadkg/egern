@@ -1,9 +1,8 @@
-// 油价小组件
-// 数据来源：https://www.autohome.com.cn/oil
-// 环境变量：
-//   城市 - 城市名（中文），默认 "上海"
-//   SHOW_DIESEL - 是否显示柴油，"true"/"false"，默认 "true"
-
+# 油价小组件
+# 数据来源：https://www.autohome.com.cn/oil
+# 环境变量：
+#   城市 - 城市名（中文），默认 "上海"
+#   SHOW_DIESEL - 是否显示柴油，"true"/"false"，默认 "true"
 name: "今日油价小组件"
 description: "今日油价小组件"
 scriptings:
