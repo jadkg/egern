@@ -86,6 +86,17 @@ export default async function (ctx) {
 
     // priority: ip.sb -> ipapi -> ipinfo -> ipwhois
     try {
+      var b = await tryApi("ipapi", "http://ip-api.com/json/?lang=zh-CN", 4000);
+      if (b) {
+        if (!out.ipv4 && b.ip) out.ipv4 = b.ip;
+        if (!out.ipv6 && b.ipv6) out.ipv6 = b.ipv6;
+        if (!out.city && b.city) out.city = b.city;
+        if (!out.isp && b.org) out.isp = b.org;
+        if (!out.asn && b.asn) out.asn = b.asn;
+      }
+    } catch (e) {}
+
+    try {
       var a = await tryApi("ipsb", "https://api.ip.sb/geoip", 4500);
       if (a) {
         if (!out.ipv4 && (a.ip || a.ipv4)) out.ipv4 = a.ip || a.ipv4;
@@ -96,16 +107,7 @@ export default async function (ctx) {
       }
     } catch (e) {}
 
-    try {
-      var b = await tryApi("ipapi", "https://ipapi.co/json/", 4000);
-      if (b) {
-        if (!out.ipv4 && b.ip) out.ipv4 = b.ip;
-        if (!out.ipv6 && b.ipv6) out.ipv6 = b.ipv6;
-        if (!out.city && b.city) out.city = b.city;
-        if (!out.isp && b.org) out.isp = b.org;
-        if (!out.asn && b.asn) out.asn = b.asn;
-      }
-    } catch (e) {}
+
 
     try {
       var c = await tryApi("ipinfo", "https://ipinfo.io/json", 4000);
@@ -279,8 +281,8 @@ export default async function (ctx) {
     // parallel: latency and public info
     var latencyEndpoints = [
       "http://wifi.vivo.com.cn/generate_204",
-      "https://www.apple.com/library/test/success.html",
-      "https://cloudflare.com/cdn-cgi/trace"
+      "https://www.baidu.com/favicon.ico",
+      "https://oss-cn-guangzhou.aliyuncs.co"
     ];
     var pLatency = measureLatency(latencyEndpoints, 3500);
     var pPublic = fetchPublicInfo();
