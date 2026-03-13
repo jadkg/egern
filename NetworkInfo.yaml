@@ -4,7 +4,7 @@ description: "网络信息小组件"
 scriptings:
   - generic:
       name: 网络信息
-      script_url: https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/NetworkInfo.js
+      script_url: https://raw.githubusercontent.com/hikling/egern/refs/heads/main/component/wangluo.js
 
 widgets:
   - name: 网络信息
