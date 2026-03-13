@@ -280,9 +280,7 @@ export default async function (ctx) {
 
     // parallel: latency and public info
     var latencyEndpoints = [
-      "http://wifi.vivo.com.cn/generate_204",
-      "http://connectivitycheck.platform.hicloud.com/generate_204",
-      "http://connect.rom.miui.com/generate_204"
+      "http://wifi.vivo.com.cn/generate_204"
     ];
     var pLatency = measureLatency(latencyEndpoints, 3500);
     var pPublic = fetchPublicInfo();
