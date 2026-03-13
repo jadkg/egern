@@ -285,24 +285,34 @@ var latencyEndpoints = [
   "http://connect.rom.miui.com/generate_204"
 ];
 
-// 最快成功测速
+var pLatency = measureLatency(latencyEndpoints, 3500);
+var pPublic = fetchPublicInfo();
+
+var [latRes, pubRes] = await Promise.allSettled([pLatency, pPublic]);
+
+var measuredLatency = latRes.status === "fulfilled" ? latRes.value : null;
+var publicInfo = pubRes.status === "fulfilled" ? pubRes.value : null;
 async function measureLatency(urls, timeout = 3500) {
 
   function ping(url) {
     return new Promise(async (resolve) => {
-      var start = Date.now();
+      let start = Date.now();
+
       try {
-        let req = new Request(url);
+        let req = new Request(url + "?t=" + Date.now()); // 防缓存
         req.timeoutInterval = timeout / 1000;
-        await req.load();
+
+        await req.loadString();
+
         resolve(Date.now() - start);
-      } catch {
+      } catch (e) {
         resolve(null);
       }
     });
   }
 
   return new Promise(resolve => {
+
     let finished = false;
 
     urls.forEach(url => {
@@ -314,21 +324,12 @@ async function measureLatency(urls, timeout = 3500) {
       });
     });
 
-    // 全部失败兜底
     setTimeout(() => {
       if (!finished) resolve(null);
     }, timeout);
+
   });
 }
-
-var pLatency = measureLatency(latencyEndpoints, 3500);
-var pPublic = fetchPublicInfo();
-
-var [latRes, pubRes] = await Promise.allSettled([pLatency, pPublic]);
-
-var measuredLatency = latRes.status === "fulfilled" ? latRes.value : null;
-var publicInfo = pubRes.status === "fulfilled" ? pubRes.value : null;
-
     // signal
     var rssi = null;
     if (wifi && typeof wifi.rssi !== "undefined") rssi = Number(wifi.rssi);
