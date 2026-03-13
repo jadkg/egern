@@ -288,48 +288,10 @@ var latencyEndpoints = [
 var pLatency = measureLatency(latencyEndpoints, 3500);
 var pPublic = fetchPublicInfo();
 
-var [latRes, pubRes] = await Promise.allSettled([pLatency, pPublic]);
+var results = await Promise.allSettled([pLatency, pPublic]);
 
-var measuredLatency = latRes.status === "fulfilled" ? latRes.value : null;
-var publicInfo = pubRes.status === "fulfilled" ? pubRes.value : null;
-async function measureLatency(urls, timeout = 3500) {
-
-  function ping(url) {
-    return new Promise(async (resolve) => {
-      let start = Date.now();
-
-      try {
-        let req = new Request(url + "?t=" + Date.now()); // 防缓存
-        req.timeoutInterval = timeout / 1000;
-
-        await req.loadString();
-
-        resolve(Date.now() - start);
-      } catch (e) {
-        resolve(null);
-      }
-    });
-  }
-
-  return new Promise(resolve => {
-
-    let finished = false;
-
-    urls.forEach(url => {
-      ping(url).then(ms => {
-        if (!finished && ms !== null) {
-          finished = true;
-          resolve(ms);
-        }
-      });
-    });
-
-    setTimeout(() => {
-      if (!finished) resolve(null);
-    }, timeout);
-
-  });
-}
+var measuredLatency = results[0].status === "fulfilled" ? results[0].value : null;
+var publicInfo = results[1].status === "fulfilled" ? results[1].value : null;
     // signal
     var rssi = null;
     if (wifi && typeof wifi.rssi !== "undefined") rssi = Number(wifi.rssi);
