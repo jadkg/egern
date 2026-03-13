@@ -285,13 +285,49 @@ var latencyEndpoints = [
   "http://connect.rom.miui.com/generate_204"
 ];
 
+// 最快成功测速
+async function measureLatency(urls, timeout = 3500) {
+
+  function ping(url) {
+    return new Promise(async (resolve) => {
+      var start = Date.now();
+      try {
+        let req = new Request(url);
+        req.timeoutInterval = timeout / 1000;
+        await req.load();
+        resolve(Date.now() - start);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  return new Promise(resolve => {
+    let finished = false;
+
+    urls.forEach(url => {
+      ping(url).then(ms => {
+        if (!finished && ms !== null) {
+          finished = true;
+          resolve(ms);
+        }
+      });
+    });
+
+    // 全部失败兜底
+    setTimeout(() => {
+      if (!finished) resolve(null);
+    }, timeout);
+  });
+}
+
 var pLatency = measureLatency(latencyEndpoints, 3500);
 var pPublic = fetchPublicInfo();
 
-var results = await Promise.allSettled([pLatency, pPublic]);
+var [latRes, pubRes] = await Promise.allSettled([pLatency, pPublic]);
 
-var measuredLatency = results[0].status === "fulfilled" ? results[0].value : null;
-var publicInfo = results[1].status === "fulfilled" ? results[1].value : null;
+var measuredLatency = latRes.status === "fulfilled" ? latRes.value : null;
+var publicInfo = pubRes.status === "fulfilled" ? pubRes.value : null;
 
     // signal
     var rssi = null;
