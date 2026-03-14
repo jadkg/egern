@@ -85,7 +85,7 @@ export default async function(ctx) {
       
       // 左列放前3个，右列放后2个
       const leftList = list.slice(0, 3);
-      const rightList = list.slice(3, 5);
+      const rightList = list.slice(3, 6);
 
       const buildColItem = (item) => ({
         type: "stack",
