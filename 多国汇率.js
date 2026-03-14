@@ -15,7 +15,8 @@ export default async function(ctx) {
       EUR: (cny / data.rates.EUR).toFixed(2),
       GBP: (cny / data.rates.GBP).toFixed(2),
       JPY: ((cny / data.rates.JPY) * 100).toFixed(2),
-      HKD: (cny / data.rates.HKD).toFixed(2)
+      HKD: (cny / data.rates.HKD).toFixed(2),
+      KRW: ((cny / data.rates.KRW) * 1000).toFixed(2)
     };
   } catch (e) {
     isError = true;
@@ -73,6 +74,7 @@ export default async function(ctx) {
       { name: "🇪🇺 EUR", rate: rates.EUR },
       { name: "🇬🇧 GBP", rate: rates.GBP },
       { name: "🇯🇵 JPY(100)", rate: rates.JPY },
+      { name: "🇰🇷 KRW(1000)", rate: rates.KRW },
       { name: "🇭🇰 HKD", rate: rates.HKD }
     ];
 
