@@ -1,149 +1,145 @@
 // 油价小组件
-// 数据来源：https://www.autohome.com.cn/oil
-// 环境变量：
-//   城市 - 城市名（中文），默认 "上海"
-//   SHOW_DIESEL - 是否显示柴油，"true"/"false"，默认 "true"
+/**
+ * ==========================================
+ * 环境变量: 城市=城市省/市拼音（城市=guangxi/guilin）
+ * 📌 代码名称: ⛽ 全国油价（默认成都）小组件
+ * ✨ 特色功能: 实时获取国内油价及涨跌趋势，精准倒数下轮调价窗口，全面支持 iOS 系统深浅模式（Light/Dark）自适应切换。
+ * 🔗 引用链接: https://raw.githubusercontent.com/jnlaoshu/MySelf/master/Egern/Widget/GasPrice.js
+ * ⏱️ 更新时间: 2026-03-15
+ * ==========================================
+ */
 
 export default async function (ctx) {
-  const city = (ctx.env.城市 || "上海").trim();
-  const SHOW_DIESEL = (ctx.env.SHOW_DIESEL || "true").trim() !== "false";
+  const regionParam = ctx.env.城市 || "guangxi/guilin"; 
+  const SHOW_TREND = (ctx.env.SHOW_TREND || "true").trim() !== "false";
+
+  // 🎨 Apple HIG 原生级自适应配色
+  const BG_COLORS = [
+  { light: '#1A2A6C', dark: '#1A2A6C' },
+  { light: '#5F2C82', dark: '#5F2C82' }
+];
+  const BLOCK_BG = { light: 'rgba(0,0,0,0.25)', dark: 'rgba(0,0,0,0.25)' }; 
+  const TEXT_MAIN = { light: '#FFFFFF', dark: '#FFFFFF' };
+  const TEXT_SUB = { light: '#98989F', dark: '#98989F' };
+
+  const CALENDAR_2026 = [
+    {m: 1, d: 12}, {m: 1, d: 23}, {m: 2, d: 9},  {m: 2, d: 23}, {m: 3, d: 9},  {m: 3, d: 23}, {m: 4, d: 7},  {m: 4, d: 21}, 
+    {m: 5, d: 8},  {m: 5, d: 22}, {m: 6, d: 5},  {m: 6, d: 19}, {m: 7, d: 3},  {m: 7, d: 17}, {m: 7, d: 31}, {m: 8, d: 14}, 
+    {m: 8, d: 28}, {m: 9, d: 11}, {m: 9, d: 25}, {m: 10, d: 14}, {m: 10, d: 28}, {m: 11, d: 11}, {m: 11, d: 25}, {m: 12, d: 9}, {m: 12, d: 23}
+  ];
 
   const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-  const refreshTime = new Date(Date.now() + 6*60*60*1000).toISOString();
+  const currYear = now.getFullYear();
+  const updateTimeStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-  const bgGradient = {
-    type: "linear",
-    colors: ["#1A0E00","#2D1800","#1A1000","#0D0800"],
-    stops: [0,0.35,0.7,1],
-    startPoint: {x:0,y:0},
-    endPoint: {x:0.8,y:1}
+  const getNextAdjust = () => {
+    for (const item of CALENDAR_2026) {
+      const target = new Date(currYear, item.m - 1, item.d, 23, 59, 59);
+      if (target > now) {
+        const diffMs = target - now;
+        const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+        return { dateStr: `${item.m}月${item.d}日24时`, countdown: `${Math.floor(totalHours / 24)}天${totalHours % 24}h后`, isUrgent: totalHours < 72 };
+      }
+    }
+    return { dateStr: "待更新", countdown: "", isUrgent: false };
   };
 
-  // 读取缓存
-  const CACHE_KEY = `autohome_oil_${city}`;
-  let prices = {p92:null,p95:null,p98:null,diesel:null};
-  try { prices = ctx.storage.getJSON(CACHE_KEY) ?? prices } catch(_){}
-
-  let fetchError = false;
+  const nextAdjust = getNextAdjust();
+  // 优化：日常显示科技蓝，72小时内警报变红，避免视觉焦虑
+  const infoColor = nextAdjust.isUrgent ? { light: '#FF3B30', dark: '#FF453A' } : { light: '#007AFF', dark: '#0A84FF' };
+  
+  let prices = { p92: null, p95: null, p98: null, diesel: null };
+  let regionName = "";
+  let trendInfo = "暂无数据";
+  let trendColor = TEXT_SUB; 
 
   try {
-    const resp = await ctx.http.get("https://www.autohome.com.cn/oil", {
-      headers:{ "User-Agent":"Mozilla/5.0" },
-      timeout:15000
-    });
+    const resp = await ctx.http.get(`http://m.qiyoujiage.com/${regionParam}.shtml`, { timeout: 10000 });
     const html = await resp.text();
-
-    // 匹配整行省份油价，依次是：92 95 98 柴油
-    const regex = new RegExp(
-      city + "[\\s\\S]*?(\\d+\\.\\d+)[\\s\\S]*?(\\d+\\.\\d+)[\\s\\S]*?(\\d+\\.\\d+)[\\s\\S]*?(\\d+\\.\\d+)"
-    );
-    const match = html.match(regex);
-    if (match) {
-      prices.p92 = parseFloat(match[1]);
-      prices.p95 = parseFloat(match[2]);
-      prices.p98 = parseFloat(match[3]);
-      prices.diesel = SHOW_DIESEL ? parseFloat(match[4]) : null;
+    const titleMatch = html.match(/<title>([^_]+)_/);
+    if (titleMatch) regionName = titleMatch[1].trim().replace(/(油价|实时|今日|最新|价格)/g, '').trim();
+    
+    const regPrice = /<dl>[\s\S]+?<dt>(.*油)<\/dt>[\s\S]+?<dd>(.*)\(元\)<\/dd>/gm;
+    let m;
+    while ((m = regPrice.exec(html)) !== null) {
+      const val = parseFloat(m[2]);
+      if (m[1].includes("92")) prices.p92 = val;
+      if (m[1].includes("95")) prices.p95 = val;
+      if (m[1].includes("98")) prices.p98 = val;
+      if (m[1].includes("柴") || m[1].includes("0号")) prices.diesel = val;
     }
+    
+    if (SHOW_TREND) {
+      const trendMatch = html.match(/<div class="tishi">[\s\S]*?<span>([^<]+)<\/span>[\s\S]*?<br\/>([\s\S]+?)<br\/>/);
+      if (trendMatch) {
+        const timeText = trendMatch[1];
+        const priceText = trendMatch[2];
+        let adjustDate = timeText.match(/(\d{1,2}月\d{1,2}日\d{1,2}时)/)?.[1] || timeText.split('价')[1]?.replace(/起.*/, '') || "未知时间";
+        const isUp = priceText.includes("上调");
+        const isDown = priceText.includes("下调");
+        const trendIcon = isUp ? "↑" : (isDown ? "↓" : "-");
+        trendColor = isUp ? { light: '#D70015', dark: '#FF453A' } : (isDown ? { light: '#248A3D', dark: '#32D74B' } : TEXT_SUB);
 
-    ctx.storage.setJSON(CACHE_KEY, prices);
-
-  } catch (e) {
-    fetchError = true;
-  }
-
-  const rows = [
-    {label:"92号",price:prices.p92,color:"#FF9F0A"},
-    {label:"95号",price:prices.p95,color:"#FF6B35"},
-    {label:"98号",price:prices.p98,color:"#FF3B30"},
-    ...(SHOW_DIESEL ? [{label:"柴油",price:prices.diesel,color:"#30D158"}]:[])
-  ].filter(r => r.price!==null);
-
-  function priceCard(row){
-    return {
-      type:"stack",
-      direction:"column",
-      alignItems:"center",
-      justifyContent:"center",
-      width:75,
-      padding:[10,12,10,12],
-      backgroundColor:"#FFFFFF10",
-      borderRadius:14,
-      children:[
-        {
-          type:"stack",
-          direction:"row",
-          alignItems:"center",
-          justifyContent:"center",
-          width:44,
-          height:22,
-          backgroundColor:row.color+"28",
-          borderRadius:7,
-          borderWidth:0.5,
-          borderColor:row.color+"55",
-          children:[
-            {
-              type:"text",
-              text:row.label,
-              font:{size:"caption1",weight:"bold"},
-              textColor:row.color,
-              textAlign:"center"
-            }
-          ]
-        },
-        {
-          type:"text",
-          text:row.price.toFixed(2),
-          font:{size:"title3",weight:"semibold"},
-          textColor:"#FFFFFF",
-          textAlign:"center"
-        }
-      ]
+        const allPrices = priceText.match(/[\d\.]+\s*元\/升/g);
+        let amount = allPrices && allPrices.length > 0 ? (allPrices.length >= 2 ? `${allPrices[0].match(/[\d\.]+/)[0]}-${allPrices[1].match(/[\d\.]+/)[0]}元/L` : `${allPrices[0].match(/[\d\.]+/)[0]}元/L`) : "";
+        trendInfo = `${adjustDate}, ${trendIcon} ${amount}`.trim();
+      }
     }
-  }
+  } catch (e) { console.log("获取油价失败", e); }
+
+  const priceItems = [
+    { label: "92号", val: prices.p92, color: { light: '#FF9500', dark: '#FF9F0A' } },
+    { label: "95号", val: prices.p95, color: { light: '#FF3B30', dark: '#FF6B35' } },
+    { label: "98号", val: prices.p98, color: { light: '#C83232', dark: '#FF453A' } },
+    { label: "柴油", val: prices.diesel, color: { light: '#28CD41', dark: '#32D74B' } }
+  ].filter(i => i.val);
 
   return {
-    type:"widget",
-    padding:[12,10,12,10],
-    gap:6,
-    backgroundGradient:bgGradient,
-    refreshAfter:refreshTime,
-    children:[
+    type: "widget", padding: 16,
+    backgroundGradient: { type: 'linear', colors: BG_COLORS, startPoint: { x: 0, y: 0 }, endPoint: { x: 1, y: 1 } },
+    children: [
+      { type: 'spacer', length: 10 },
       {
-        type:"stack",
-        direction:"row",
-        alignItems:"center",
-        gap:5,
-        padding:[0,10,0,10],
-        children:[
-          {type:"image",src:"sf-symbol:fuelpump.fill",width:14,height:14,color:"#FF9F0A"},
-          {type:"text",text:`${city}油价`,font:{size:"caption1",weight:"semibold"},textColor:"#FFFFFFBB"},
-          {type:"spacer"},
-          fetchError
-            ? {type:"text",text:"数据获取失败",font:{size:"caption2"},textColor:"#FF453A"}
-            : null
-        ].filter(Boolean)
-      },
-      {
-        type:"stack",
-        direction:"row",
-        alignItems:"center",
-        justifyContent:"center",
-        gap:12,
-        padding:[8,0,8,0],
-        children: rows.map(priceCard)
-      },
-      {
-        type:"stack",
-        direction:"row",
-        alignItems:"center",
-        padding:[0,10,0,10],
-        children:[
-          {type:"text",text:`${timeStr} 更新`,font:{size:"caption2"},textColor:"#FFFFFF44"},
-          {type:"spacer"},
-          {type:"text",text:"元/升",font:{size:"caption2"},textColor:"#FFFFFF66"}
+        type: "stack", direction: "row",
+        children: [
+          {
+            type: "stack", direction: "row", alignItems: "center", gap: 8,
+            children: [
+              { type: "image", src: "sf-symbol:fuelpump.fill", width: 18, height: 18, color: TEXT_MAIN },
+              { type: "text", text: `${regionName || "获取中"}油价`, font: { size: 17, weight: "bold" }, textColor: TEXT_MAIN }
+            ]
+          },
+          { type: "spacer" }, 
+          { type: "text", text: `下轮调价: ${nextAdjust.dateStr} , ${nextAdjust.countdown}`, font: { size: 12, weight: "bold" }, textColor: infoColor, textAlign: "right", lineLimit: 1, minScale: 0.5 }
         ]
-      }
+      },
+      { type: 'spacer', length: 14 },
+      {
+        type: "stack", direction: "row", gap: 8,
+        children: priceItems.map(row => ({
+          type: "stack", direction: "column", alignItems: "center", flex: 1, padding: [10, 0], backgroundColor: BLOCK_BG, borderRadius: 12,
+          children: [
+            { type: "text", text: row.label, font: { size: 10, weight: "bold" }, textColor: row.color },
+            { type: "text", text: row.val?.toFixed(2) || "--", font: { size: 18, weight: "bold" }, textColor: TEXT_MAIN }
+          ]
+        }))
+      },
+      { type: 'spacer', length: 12 },
+      {
+        type: "stack", direction: "row", alignItems: "center",
+        children: [
+          { type: "stack", direction: "row", alignItems: "center", gap: 4, children: [
+              { type: "image", src: "sf-symbol:arrow.triangle.2.circlepath", width: 10, height: 10, color: trendColor },
+              { type: "text", text: updateTimeStr, font: { size: 10 }, textColor: trendColor }
+          ]},
+          { type: "spacer" },
+          { type: "stack", direction: "row", alignItems: "center", gap: 2, children: [
+              { type: "text", text: "本轮调价: ", font: { size: 10 }, textColor: trendColor },
+              { type: "text", text: trendInfo, font: { size: 10, weight: "bold" }, textColor: trendColor, lineLimit: 1, minScale: 0.8 }
+          ]}
+        ]
+      },
+      { type: 'spacer' }
     ]
-  }
+  };
 }
