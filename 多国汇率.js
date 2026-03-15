@@ -73,9 +73,9 @@ export default async function(ctx) {
       { name: "🇺🇸 USD", rate: rates.USD },
       { name: "🇪🇺 EUR", rate: rates.EUR },
       { name: "🇬🇧 GBP", rate: rates.GBP },
+      { name: "🇭🇰 HKD", rate: rates.HKD },
       { name: "🇯🇵 JPY(100)", rate: rates.JPY },
-      { name: "🇰🇷 KRW(1000)", rate: rates.KRW },
-      { name: "🇭🇰 HKD", rate: rates.HKD }
+      { name: "🇰🇷 KRW(1000)", rate: rates.KRW }
     ];
 
     if (isMedium) {
@@ -83,7 +83,7 @@ export default async function(ctx) {
       const leftColChildren = [];
       const rightColChildren = [];
       
-      // 左列放前3个，右列放后2个
+      // 左列放前3个，右列放后3个
       const leftList = list.slice(0, 3);
       const rightList = list.slice(3, 6);
 
