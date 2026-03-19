@@ -1,15 +1,15 @@
 export default async function(ctx) {
   const C = {
     bg: [{ light: '#8BE6B3', dark: '#1F6F4A' }, { light: '#C8F7D6', dark: '#0F3D2E' }],
-    main: { light: '#000000', dark: '#000000' },
-    sub: { light: '#000000', dark: '#000000' }, 
+    main: { light: '#000000', dark: '#FFFFFF' },
+    sub: { light: '#000000', dark: '#FFFFFF' }, 
     muted: { light: '#8E8E93', dark: '#8E8E93' },
     gold: { light: '#FF9500', dark: '#FFD700' },     
     orange: { light: '#FF6B00', dark: '#FF8800' }, 
     red: { light: '#FF3B30', dark: '#FF453A' },    
     teal: { light: '#007AFF', dark: '#0A84FF' },
     blue: { light: '#007AFF', dark: '#0A84FF' },     
-    purple: { light: '#AF52DE', dark: '#BF5AF2' },   
+    purple: { light: '#AF52DE', dark: '#f778ba' },   
     cyan: { light: '#5AC8FA', dark: '#64D2FF' }
   };
 
