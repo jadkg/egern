@@ -1,0 +1,57 @@
+name: "A股走势"
+description: "A股指数日K小组件：卡片风格，红涨绿跌，支持小/中/大尺寸与锁屏。数据来自东方财富。"
+author: "jadkg"
+homepage: "https://github.com/jadkg/egern"
+icon: "chart.line.uptrend.xyaxis"
+
+# 在模块设置页里会自动生成对应的输入框 / 选择器。
+# 留空表示使用脚本内置默认值。
+env_schema:
+  INDEXES:
+    name: "指数列表"
+    description: "格式「市场.代码」，英文逗号分隔；1=沪市 0=深市。中尺寸显示前3个，小尺寸只显示第1个。常用：1.000001 上证指数、0.399001 深证成指、0.399006 创业板指、1.000300 沪深300、1.000688 科创50、1.000016 上证50、1.000905 中证500"
+    default_value: "1.000001,0.399001,0.399006"
+  DAYS:
+    name: "K线根数"
+    description: "中/小尺寸显示的日K根数（小尺寸最多24根）。大尺寸固定50根。"
+    options:
+      - "20"
+      - "30"
+      - "40"
+      - "50"
+  REFRESH:
+    name: "刷新间隔（分钟）"
+    description: "系统会根据此值建议刷新时间，实际刷新频率由 iOS 决定。"
+    options:
+      - "5"
+      - "10"
+      - "15"
+      - "30"
+      - "60"
+  UP_COLOR:
+    name: "上涨颜色"
+    description: "默认 #FF4D4F（红）。想要绿涨红跌，把上涨设为 #22C55E、下跌设为 #FF4D4F。"
+    options:
+      - "#FF4D4F"
+      - "#22C55E"
+      - "#F5A623"
+      - "#3B82F6"
+      - "#8B5CF6"
+  DOWN_COLOR:
+    name: "下跌颜色"
+    description: "默认 #22C55E（绿）。"
+    options:
+      - "#22C55E"
+      - "#FF4D4F"
+      - "#F5A623"
+      - "#3B82F6"
+      - "#8B5CF6"
+
+scriptings:
+  - generic:
+      name: "A股走势"
+      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/%E8%82%A1%E5%B8%82.js"
+      timeout: 20
+
+widgets:
+  - name: "A股走势"
