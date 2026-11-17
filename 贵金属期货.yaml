@@ -1,0 +1,63 @@
+name: "贵金属期货"
+description: "贵金属期货日K小组件：卡片风格，红涨绿跌，支持小/中/大尺寸与锁屏。数据来自东方财富。"
+author: "jadkg"
+homepage: "https://github.com/jadkg/egern"
+icon: "chart.line.uptrend.xyaxis"
+
+# 留空表示使用脚本内置默认值。
+env_schema:
+  INDEXES:
+    name: "品种列表"
+    description: "格式「市场.代码」，英文逗号分隔。中尺寸/大尺寸显示前3个，小尺寸只显示第1个。可选：101.GC00Y 纽约黄金、101.SI00Y 纽约白银、101.PL00Y 纽约铂金、101.PA00Y 纽约钯金、113.aum 沪金主连、113.agm 沪银主连"
+    default_value: "101.GC00Y,101.SI00Y,113.aum"
+  KLINE_PERIOD:
+    name: "K线周期"
+    description: "日K / 周K / 月K。默认日K。周K、月K 下大尺寸的数据卡片会显示本周/本月开盘、上周/上月收盘。"
+    options:
+      - "日K"
+      - "周K"
+      - "月K"
+  DAYS:
+    name: "K线根数"
+    description: "中/小尺寸显示的K线根数（小尺寸最多24根）。大尺寸固定50根。"
+    options:
+      - "20"
+      - "30"
+      - "40"
+      - "50"
+  REFRESH:
+    name: "刷新间隔（分钟）"
+    description: "系统会根据此值建议刷新时间，实际刷新频率由 iOS 决定。"
+    options:
+      - "5"
+      - "10"
+      - "15"
+      - "30"
+      - "60"
+  UP_COLOR:
+    name: "上涨颜色"
+    description: "默认 #FF4D4F（红）。想要绿涨红跌，把上涨设为 #22C55E、下跌设为 #FF4D4F。"
+    options:
+      - "#FF4D4F"
+      - "#22C55E"
+      - "#F5A623"
+      - "#3B82F6"
+      - "#8B5CF6"
+  DOWN_COLOR:
+    name: "下跌颜色"
+    description: "默认 #22C55E（绿）。"
+    options:
+      - "#22C55E"
+      - "#FF4D4F"
+      - "#F5A623"
+      - "#3B82F6"
+      - "#8B5CF6"
+
+scriptings:
+  - generic:
+      name: "贵金属期货"
+      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/metals-futures.js"
+      timeout: 20
+
+widgets:
+  - name: "贵金属期货"
