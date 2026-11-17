@@ -7,6 +7,7 @@
 //   DOWN_COLOR 下跌颜色（6位hex），默认绿 #22C55E
 //   DAYS       中/小尺寸K线根数，默认 30
 //   REFRESH    刷新间隔（分钟），默认 10
+//   KLINE_PERIOD K线周期：日K / 周K / 月K，默认 日K
 
 const NAMES = {
   '1.000001': '上证指数',
@@ -46,10 +47,10 @@ async function getQuotes(ctx, secids) {
 }
 
 // 日K：每行 日期,开,收,高,低,量,额
-async function getKline(ctx, secid) {
+async function getKline(ctx, secid, klt) {
   try {
     const url =
-      'https://push2his.eastmoney.com/api/qt/stock/kline/get?klt=101&fqt=1&end=20500101' +
+      'https://push2his.eastmoney.com/api/qt/stock/kline/get?klt=' + (klt || 101) + '&fqt=1&end=20500101' +
       '&lmt=' + FETCH_DAYS +
       '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57&secid=' + secid;
     const resp = await ctx.http.get(url);
@@ -126,6 +127,13 @@ export default async function (ctx) {
   const GRAY = '#8E8E93';
   const days = Number(env.DAYS) || 30;
   const refreshMin = Number(env.REFRESH) || 10;
+  // K线周期：101=日K 102=周K 103=月K
+  const PERIODS = { '日K': 101, '周K': 102, '月K': 103 };
+  const periodName = PERIODS[env.KLINE_PERIOD] ? env.KLINE_PERIOD : '日K';
+  const klt = PERIODS[periodName];
+  const unitWord = periodName === '周K' ? '周' : periodName === '月K' ? '月' : '';
+  const L_OPEN = unitWord ? unitWord + '开' : '今开';
+  const L_PREV = unitWord ? '上' + unitWord + '收' : '昨收';
   const secids = (env.INDEXES || '1.000001,0.399001,0.399006')
     .split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -152,7 +160,7 @@ export default async function (ctx) {
     };
   }
 
-  const klines = await Promise.all(quotes.map((q) => getKline(ctx, q.id)));
+  const klines = await Promise.all(quotes.map((q) => getKline(ctx, q.id, klt)));
   const q0 = quotes[0];
   const c0 = colorOf(q0.pct);
   const pctText = (q) => sign(q.pct) + q.pct.toFixed(2) + '%';
@@ -213,7 +221,7 @@ export default async function (ctx) {
   const footer = {
     type: 'stack', direction: 'row',
     children: [
-      { type: 'text', text: 'A股 · 日K', font: { size: 'caption2', weight: 'semibold' }, textColor: GRAY },
+      { type: 'text', text: 'A股 · ' + periodName, font: { size: 'caption2', weight: 'semibold' }, textColor: GRAY },
       { type: 'spacer' },
       { type: 'date', date: new Date().toISOString(), format: 'time', font: { size: 'caption2' }, textColor: GRAY },
     ],
@@ -360,10 +368,10 @@ export default async function (ctx) {
     children.push({
       type: 'stack', direction: 'row', gap: 5,
       children: [
-        stat('今开', last.o, GRAY),
+        stat(L_OPEN, last.o, GRAY),
         stat('最高', last.h, UP),
         stat('最低', last.l, DOWN),
-        stat('昨收', prev.c, GRAY),
+        stat(L_PREV, prev.c, GRAY),
       ],
     });
   }
