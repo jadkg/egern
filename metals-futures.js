@@ -58,21 +58,26 @@ async function getQuotes(ctx, secids) {
 }
 
 // 日K：每行 日期,开,收,高,低,量,额
-async function getKline(ctx, secid, klt) {
+async function getKline(ctx, secid, klt, ref) {
   try {
     const url =
-      'https://push2his.eastmoney.com/api/qt/stock/kline/get?klt=' + (klt || 101) + '&fqt=1&end=20500101' +
+      'https://push2his.eastmoney.com/api/qt/stock/kline/get?klt=' + (klt || 101) + '&fqt=0&end=20500101' +
       '&lmt=' + FETCH_DAYS +
       '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57&secid=' + secid;
     const resp = await ctx.http.get(url);
     const json = await resp.json();
     const lines = (json && json.data && json.data.klines) || [];
-    return lines
+    const list = lines
       .map((l) => {
         const p = l.split(',');
         return { date: p[0], o: +p[1], c: +p[2], h: +p[3], l: +p[4] };
       })
       .filter((k) => !isNaN(k.o) && !isNaN(k.c));
+    // 分钟K：剔除明显偏离现价的异常K线（超出现价 ±30%）
+    if (klt < 100 && ref > 0) {
+      return list.filter((k) => k.c > ref * 0.7 && k.c < ref * 1.3 && k.h < ref * 1.3 && k.l > ref * 0.7);
+    }
+    return list;
   } catch (e) {
     return [];
   }
@@ -171,7 +176,7 @@ export default async function (ctx) {
     };
   }
 
-  const klines = await Promise.all(quotes.map((q) => getKline(ctx, q.id, klt)));
+  const klines = await Promise.all(quotes.map((q) => getKline(ctx, q.id, klt, q.price)));
   const q0 = quotes[0];
   const c0 = colorOf(q0.pct);
   const pctText = (q) => sign(q.pct) + q.pct.toFixed(2) + '%';
