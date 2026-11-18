@@ -7,7 +7,7 @@
 //   DOWN_COLOR 下跌颜色（6位hex），默认绿 #22C55E
 //   DAYS       中/小尺寸K线根数，默认 30
 //   REFRESH    刷新间隔（分钟），默认 10
-//   KLINE_PERIOD K线周期：日K / 周K / 月K，默认 日K
+//   KLINE_PERIOD K线周期：5分钟 / 15分钟 / 30分钟 / 60分钟 / 日K / 周K / 月K，默认 日K
 
 const NAMES = {
   '1.000001': '上证指数',
@@ -127,13 +127,14 @@ export default async function (ctx) {
   const GRAY = '#8E8E93';
   const days = Number(env.DAYS) || 30;
   const refreshMin = Number(env.REFRESH) || 10;
-  // K线周期：101=日K 102=周K 103=月K
-  const PERIODS = { '日K': 101, '周K': 102, '月K': 103 };
+  // K线周期：5/15/30/60=分钟K 101=日K 102=周K 103=月K
+  const PERIODS = { '5分钟': 5, '15分钟': 15, '30分钟': 30, '60分钟': 60, '日K': 101, '周K': 102, '月K': 103 };
   const periodName = PERIODS[env.KLINE_PERIOD] ? env.KLINE_PERIOD : '日K';
   const klt = PERIODS[periodName];
   const unitWord = periodName === '周K' ? '周' : periodName === '月K' ? '月' : '';
-  const L_OPEN = unitWord ? unitWord + '开' : '今开';
-  const L_PREV = unitWord ? '上' + unitWord + '收' : '昨收';
+  const isMin = klt < 100;
+  const L_OPEN = isMin ? '本根开' : unitWord ? unitWord + '开' : '今开';
+  const L_PREV = isMin ? '上根收' : unitWord ? '上' + unitWord + '收' : '昨收';
   const secids = (env.INDEXES || '1.000001,0.399001,0.399006')
     .split(',').map((s) => s.trim()).filter(Boolean);
 
