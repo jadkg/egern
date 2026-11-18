@@ -57,8 +57,47 @@ async function getQuotes(ctx, secids) {
     .filter((q) => q && !isNaN(q.price));
 }
 
-// 日K：每行 日期,开,收,高,低,量,额
+// 调试信息（env DEBUG=开 时显示在小组件底部）
+const DBG = [];
+const sane = (k, ref) => k.c > ref * 0.7 && k.c < ref * 1.3 && k.h < ref * 1.3 && k.l > ref * 0.7;
+
+// 备用：用1分钟分时数据（最近5天）自行合成 N 分钟K线
+async function getMinuteBars(ctx, secid, minutes) {
+  const url =
+    'https://push2his.eastmoney.com/api/qt/stock/trends2/get?iscr=0&ndays=5' +
+    '&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11&fields2=f51,f52,f53,f54,f55,f56,f57,f58&secid=' + secid;
+  const resp = await ctx.http.get(url);
+  const json = await resp.json();
+  const lines = (json && json.data && json.data.trends) || [];
+  DBG.push(secid + ' trends n=' + lines.length + ' [' + lines[lines.length - 1] + ']');
+  const bars = [];
+  let curKey = null;
+  let cur = null;
+  lines.forEach((l) => {
+    const p = l.split(',');
+    const t = p[0]; // YYYY-MM-DD HH:MM
+    const o = +p[1], c = +p[2];
+    if (isNaN(o) || isNaN(c)) return;
+    const hi = Math.max(o, c, +p[3] || 0);
+    const lo = +p[4] > 0 ? Math.min(o, c, +p[4]) : Math.min(o, c);
+    const mins = +t.slice(11, 13) * 60 + +t.slice(14, 16);
+    const key = t.slice(0, 10) + '-' + Math.floor(mins / minutes);
+    if (key !== curKey) {
+      cur = { date: t, o, c, h: hi, l: lo };
+      bars.push(cur);
+      curKey = key;
+    } else {
+      cur.c = c;
+      cur.h = Math.max(cur.h, hi);
+      cur.l = Math.min(cur.l, lo);
+    }
+  });
+  return bars;
+}
+
+// K线：每行 日期,开,收,高,低,量,额
 async function getKline(ctx, secid, klt, ref) {
+  let list = [];
   try {
     const url =
       'https://push2his.eastmoney.com/api/qt/stock/kline/get?klt=' + (klt || 101) + '&fqt=0&end=20500101' +
@@ -67,20 +106,29 @@ async function getKline(ctx, secid, klt, ref) {
     const resp = await ctx.http.get(url);
     const json = await resp.json();
     const lines = (json && json.data && json.data.klines) || [];
-    const list = lines
+    DBG.push(secid + ' k n=' + lines.length + ' [' + lines[0] + '] [' + lines[lines.length - 2] + ']');
+    list = lines
       .map((l) => {
         const p = l.split(',');
         return { date: p[0], o: +p[1], c: +p[2], h: +p[3], l: +p[4] };
       })
       .filter((k) => !isNaN(k.o) && !isNaN(k.c));
-    // 分钟K：剔除明显偏离现价的异常K线（超出现价 ±30%）
-    if (klt < 100 && ref > 0) {
-      return list.filter((k) => k.c > ref * 0.7 && k.c < ref * 1.3 && k.h < ref * 1.3 && k.l > ref * 0.7);
-    }
-    return list;
   } catch (e) {
-    return [];
+    DBG.push(secid + ' err ' + e);
   }
+  // 分钟K：剔除偏离现价 ±30% 的异常K线；若可用的太少，改用分时数据合成
+  if (klt < 100 && ref > 0) {
+    let good = list.filter((k) => sane(k, ref));
+    if (good.length < 10) {
+      try {
+        good = (await getMinuteBars(ctx, secid, klt)).filter((k) => sane(k, ref));
+      } catch (e) {
+        DBG.push(secid + ' err2 ' + e);
+      }
+    }
+    return good;
+  }
+  return list;
 }
 
 // 画蜡烛图。all=完整K线（用于算均线），n=显示最近多少根
@@ -177,6 +225,10 @@ export default async function (ctx) {
   }
 
   const klines = await Promise.all(quotes.map((q) => getKline(ctx, q.id, klt, q.price)));
+  const dbgNode =
+    env.DEBUG === '开' && DBG.length
+      ? { type: 'text', text: DBG.join(' | '), font: { size: 8 }, textColor: GRAY, maxLines: 8 }
+      : null;
   const q0 = quotes[0];
   const c0 = colorOf(q0.pct);
   const pctText = (q) => sign(q.pct) + q.pct.toFixed(2) + '%';
@@ -312,9 +364,11 @@ export default async function (ctx) {
 
   // ---------- 中尺寸 ----------
   if (fam === 'systemMedium') {
+    const mc = quotes.map((q, i) => row(q, klines[i]));
+    if (dbgNode) mc.push(dbgNode);
     return {
       type: 'widget', padding: [10, 12], gap: 5, backgroundColor: bg, refreshAfter,
-      children: quotes.map((q, i) => row(q, klines[i])),
+      children: mc,
     };
   }
 
@@ -389,6 +443,7 @@ export default async function (ctx) {
 
   quotes.slice(1).forEach((q, i) => children.push(row(q, klines[i + 1])));
 
+  if (dbgNode) children.push(dbgNode);
   children.push({ type: 'spacer' });
   children.push(footer);
 
