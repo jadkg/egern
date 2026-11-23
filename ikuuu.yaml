@@ -54,19 +54,19 @@ scriptings:
   - http_request:
       name: "iKuuu Cookie 抓取"
       match: "^https?://(?:www\\.)?ikuuu\\.(?:org|top|pw)/"
-      script_url: "https://raw.githubusercontent.com/Yjwj205/loon-modules/main/egern/ikuuu-cookie.js"
+      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/ikuuu-cookie.js"
       timeout: 10
 
   - schedule:
       name: "iKuuu Cookie 保活"
       cron: "{{{KEEPALIVE_CRON}}}"
-      script_url: "https://raw.githubusercontent.com/Yjwj205/loon-modules/main/egern/ikuuu-keepalive.js"
+      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/ikuuu-keepalive.js"
       timeout: 60
 
   - schedule:
       name: "iKuuu 定时签到"
       cron: "{{{CHECKIN_CRON}}}"
-      script_url: "https://raw.githubusercontent.com/Yjwj205/loon-modules/main/egern/ikuuu-checkin.js"
+      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/ikuuu-checkin.js"
       timeout: 60
 
 mitm:
