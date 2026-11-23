@@ -44,6 +44,6 @@ export default async function (ctx) {
   console.log("[iKuuu] 已保存登录 Cookie（" + cookie.length + " 字节），域名 " + (host || "未知"));
   notify(
     "已获取登录 Cookie（" + (host ? host.replace("https://", "") : "未知域名") + "）",
-    "之后到期前会自动用邮箱密码续期；不需要再抓取时可以停用本模块的抓取（或保持不动）。"
+    "签到会使用这份 Cookie；约 7 天后到期，到期前会提醒你重新登录一次。"
   );
 }
