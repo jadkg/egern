@@ -1,29 +1,17 @@
 name: "iKuuu 每日签到"
-description: "ikuuu（org/top/pw 三域名通用）：自动抓取 Cookie、到期前自动重新登录保活、每日定时签到并通知剩余流量"
+description: "ikuuu（org/top/pw 三域名通用）：自动抓取 Cookie、每日定时签到并通知剩余流量，Cookie 快到期时提醒重新登录"
 author: "Yjwj205 / Minis"
-homepage: "https://github.com/Yjwj205"
+homepage: "https://github.com/jadkg/egern"
 icon: "calendar.badge.checkmark"
 
-# 在模块设置页可改：签到时间、保活时间（5 段 cron：分 时 日 月 周）
+# 在模块设置页可改：签到时间（5 段 cron：分 时 日 月 周）
 compat_arguments:
   CHECKIN_CRON: "0 8 * * *"
-  KEEPALIVE_CRON: "50 7 * * *"
 
-# 这些会在模块设置页生成输入框/开关；未填写时脚本内使用默认值
 env_schema:
   COOKIE:
     name: "手动 Cookie"
-    description: "可选。留空则使用自动抓取/自动续期的 Cookie；填了会优先使用，保活将不生效"
-  EMAIL:
-    name: "登录邮箱"
-    description: "保活用：Cookie 快到期时自动重新登录。留空则不保活"
-  PASSWORD:
-    name: "登录密码"
-    description: "保活用：仅保存在模块 env 中"
-  REFRESH_DAYS:
-    name: "提前续期天数"
-    description: "Cookie 剩余天数 ≤ 该值时自动重新登录"
-    default_value: "2"
+    description: "可选。留空则使用自动抓取的 Cookie；填了会优先使用"
   REQUEST_POLICY:
     name: "请求策略"
     description: "可选：节点名 / 策略组名 / DIRECT，留空跟随规则"
@@ -56,12 +44,6 @@ scriptings:
       match: "^https?://(?:www\\.)?ikuuu\\.(?:org|top|pw)/"
       script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/ikuuu-cookie.js"
       timeout: 10
-
-  - schedule:
-      name: "iKuuu Cookie 保活"
-      cron: "{{{KEEPALIVE_CRON}}}"
-      script_url: "https://raw.githubusercontent.com/jadkg/egern/refs/heads/main/ikuuu-keepalive.js"
-      timeout: 60
 
   - schedule:
       name: "iKuuu 定时签到"
