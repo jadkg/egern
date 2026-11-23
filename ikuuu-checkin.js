@@ -267,7 +267,7 @@ export default async function (ctx) {
       subtitle: "还剩约 " + days + " 天",
       body:
         "到期时间：" + formatTs(ts) + "\n" +
-        "已填邮箱密码的话，保活脚本会自动续期；否则请在 Safari 重新登录一次。",
+        "请在 Safari 重新登录一次，模块会自动抓取新 Cookie。",
     });
   }
 
@@ -339,7 +339,7 @@ export default async function (ctx) {
         return {
           fail: true,
           subtitle: "Cookie 已失效",
-          body: "服务器返回的是登录页。已填邮箱密码的话等保活脚本续期；否则请在 Safari 重新登录。",
+          body: "服务器返回的是登录页，请在 Safari 重新登录一次，模块会自动抓取新 Cookie。",
         };
       }
       return {
@@ -396,8 +396,7 @@ export default async function (ctx) {
       [
         "还没拿到登录 Cookie。",
         "① 在 Safari 打开 ikuuu 登录一次（需已安装 MITM 证书、模块已启用）；",
-        "② 或在模块设置里填邮箱密码，保活脚本会自动登录获取；",
-        "③ 或在模块设置的「手动 Cookie」里粘贴。",
+        "② 或在模块设置的「手动 Cookie」里粘贴。",
       ].join("\n")
     );
   }
